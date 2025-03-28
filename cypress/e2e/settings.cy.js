@@ -2,55 +2,61 @@
 /// <reference types="../support" />
 
 import HomePageObject from '../support/pages/home.pageObject';
+import SettingsPageObject from '../support/pages/settings.pageObject';
 
 describe('Settings page', () => {
   const homePage = new HomePageObject();
+  const settingsPage = new SettingsPageObject();
 
   let user;
+  let settings;
 
   before(() => {
-    cy.task('db:clear');
+    cy.task('generateUser').then((generateUser) => {
+      user = generateUser;
+    });
+
+    cy.task('generateSettings').then((generateSettings) => {
+      settings = generateSettings;
+    });
   });
 
   beforeEach(() => {
-    cy.task('generateUser')
-      .then((generateUser) => {
-        user = generateUser;
-      })
-      .then(() => cy.login(user.email, user.username, user.password));
-    homePage.visit('/settings');
+    cy.task('db:clear');
+    cy.visit('/');
+    cy.login(user.email, user.username, user.password);
+    cy.visit('/settings');
   });
 
   it('should provide an ability to update username', () => {
-    cy.getByDataCy('username').clear().type('Mariia');
-    cy.getByDataCy('save-settings').click();
-    cy.getByDataCy('profile-link').should('contain.text', 'mariia');
+    settingsPage.changeUsername(settings.username);
+    settingsPage.updateInfo();
+    settingsPage.checkUserName(settings.username);
   });
 
   it('should provide an ability to update bio', () => {
-    cy.getByDataCy('bio').clear().type('my life');
-    cy.getByDataCy('save-settings').click();
-    cy.contains('my life');
+    settingsPage.changeBio(settings.bio);
+    settingsPage.updateInfo();
+    settingsPage.checkBio(settings.bio);
   });
 
   it('should provide an ability to update an email', () => {
-    cy.getByDataCy('email').clear().type('new@gmail.com');
-    cy.getByDataCy('save-settings').click();
-    homePage.visit('/settings');
-    // cy.contains('new@gmail.com');
-    cy.getByDataCy('email').should('have.value', 'new@gmail.com');
+    settingsPage.changeEmail(settings.email);
+    settingsPage.updateInfo();
+    settingsPage.visit();
+    settingsPage.checkEmail(settings.email.toLowerCase());
   });
 
   it('should provide an ability to update password', () => {
-    cy.getByDataCy('password').clear().type('newPass');
-    cy.getByDataCy('save-settings').click();
+    settingsPage.changePassword(settings.password);
+    settingsPage.updateInfo();
   });
 
   it('should provide an ability to log out', () => {
-    cy.getByDataCy('log-out').click();
+    settingsPage.clickLogOutBtn();
 
-    cy.getByDataCy('profile-link').should('not.exist');
+    settingsPage.checkNoUserName();
 
-    cy.getByDataCy('sign-in').should('be.visible');
+    settingsPage.checkSingInLink();
   });
 })
